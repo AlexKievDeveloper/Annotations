@@ -1,6 +1,9 @@
-package com.glushkov.QueryGenerator;
+package com.glushkov.query_generator;
+
+import com.glushkov.dao.DefaultDataSource;
 
 import java.lang.reflect.Field;
+import java.sql.*;
 import java.util.StringJoiner;
 
 public class QueryGenerator {
@@ -13,7 +16,9 @@ public class QueryGenerator {
             throw new IllegalArgumentException("@Table is missing");
         }
 
-        String tableName = annotation.name().isEmpty() ? clazz.getName() : annotation.name();
+        String schemaName = annotation.schema();
+        String tableName = annotation.name().isEmpty() ? clazz.getSimpleName().toLowerCase() : annotation.name();
+
         StringJoiner stringJoiner = new StringJoiner(", ");
 
         for (Field declaredField : clazz.getDeclaredFields()) {
@@ -24,8 +29,12 @@ public class QueryGenerator {
                 stringJoiner.add(columnName);
             }
         }
+
         stringBuilder.append(stringJoiner);
         stringBuilder.append(" FROM ");
+        if (!schemaName.equals("")) {
+            stringBuilder.append(schemaName + ".");
+        }
         stringBuilder.append(tableName);
         stringBuilder.append(";");
 
@@ -40,7 +49,9 @@ public class QueryGenerator {
             throw new IllegalArgumentException("@Table is missing");
         }
 
-        String tableName = annotation.name().isEmpty() ? value.getClass().getName() : annotation.name();
+        String schemaName = annotation.schema();
+        String tableName = annotation.name().isEmpty() ? value.getClass().getSimpleName().toLowerCase() : annotation.name();
+
         StringJoiner stringJoiner = new StringJoiner(", ");
 
         for (Field declaredField : value.getClass().getDeclaredFields()) {
@@ -51,7 +62,9 @@ public class QueryGenerator {
                 stringJoiner.add(columnName);
             }
         }
-
+        if (!schemaName.equals("")) {
+            stringBuilder.append(schemaName + ".");
+        }
         stringBuilder.append(tableName);
         stringBuilder.append(" (");
         stringBuilder.append(stringJoiner);
@@ -71,11 +84,12 @@ public class QueryGenerator {
             throw new IllegalArgumentException("@Table is missing");
         }
 
-        String tableName = annotation.name().isEmpty() ? value.getClass().getName() : annotation.name();
-        StringJoiner stringJoiner = new StringJoiner(", ");
+        String schemaName = annotation.schema();
+        String tableName = annotation.name().isEmpty() ? value.getClass().getSimpleName().toLowerCase() : annotation.name();
 
         String values = QueryGenerator.getColumnsValues(value);
         String[] valuesArray = values.split(", ");
+        StringJoiner stringJoiner = new StringJoiner(", ");
 
         int index = 0;
         for (Field declaredField : value.getClass().getDeclaredFields()) {
@@ -91,11 +105,13 @@ public class QueryGenerator {
                 index++;
             }
         }
-
+        if (!schemaName.equals("")) {
+            stringBuilder.append(schemaName + ".");
+        }
         stringBuilder.append(tableName);
         stringBuilder.append(" SET ");
         stringBuilder.append(stringJoiner);
-        stringBuilder.append(" WHERE condition;");
+        stringBuilder.append(";");
 
         return stringBuilder.toString();
     }
@@ -108,7 +124,9 @@ public class QueryGenerator {
             throw new IllegalArgumentException("@Table is missing");
         }
 
-        String tableName = annotation.name().isEmpty() ? clazz.getName() : annotation.name();
+        String schemaName = annotation.schema();
+        String tableName = annotation.name().isEmpty() ? clazz.getSimpleName().toLowerCase() : annotation.name();
+
         StringJoiner stringJoiner = new StringJoiner(", ");
 
         for (Field declaredField : clazz.getDeclaredFields()) {
@@ -122,8 +140,13 @@ public class QueryGenerator {
 
         stringBuilder.append(stringJoiner);
         stringBuilder.append(" FROM ");
+        if (!schemaName.equals("")) {
+            stringBuilder.append(schemaName + ".");
+        }
         stringBuilder.append(tableName);
-        stringBuilder.append(" WHERE id = ");
+        stringBuilder.append(" WHERE ");
+        stringBuilder.append(getPrimaryKeyName(schemaName, tableName));
+        stringBuilder.append(" = ");
         stringBuilder.append(id);
         stringBuilder.append(";");
 
@@ -138,10 +161,16 @@ public class QueryGenerator {
             throw new IllegalArgumentException("@Table is missing");
         }
 
-        String tableName = annotation.name().isEmpty() ? clazz.getName() : annotation.name();
+        String schemaName = annotation.schema();
+        String tableName = annotation.name().isEmpty() ? clazz.getSimpleName().toLowerCase() : annotation.name();
 
+        if (!schemaName.equals("")) {
+            stringBuilder.append(schemaName + ".");
+        }
         stringBuilder.append(tableName);
-        stringBuilder.append(" WHERE id = ");
+        stringBuilder.append(" WHERE ");
+        stringBuilder.append(getPrimaryKeyName(schemaName, tableName));
+        stringBuilder.append(" = ");
         stringBuilder.append(id);
         stringBuilder.append(";");
 
@@ -150,22 +179,45 @@ public class QueryGenerator {
 
     static String getColumnsValues(Object value) {
         try {
-            Class clazz = value.getClass();
-            Field[] fields = clazz.getDeclaredFields();
             StringJoiner valuesJoiner = new StringJoiner(", ");
 
-            for (Field field : fields) {
+            for (Field field : value.getClass().getDeclaredFields()) {
                 Column annotation = field.getAnnotation(Column.class);
                 if (annotation != null) {
                     field.setAccessible(true);
                     Object fieldValue = field.get(value);
-                    valuesJoiner.add(fieldValue.toString());
-                    field.setAccessible(false);
+
+                    if (fieldValue == null) {
+                        throw new RuntimeException("Field value is null:" + fieldValue + ". Field:" + field);
+                    }
+                    if (field.getType() == String.class) {
+                        valuesJoiner.add("'" + fieldValue.toString() + "'");
+                    } else {
+                        valuesJoiner.add(fieldValue.toString());
+                    }
                 }
             }
             return valuesJoiner.toString();
         } catch (ReflectiveOperationException reflectiveOperationException) {
-            throw new RuntimeException("Exception while getting values from object fields.", reflectiveOperationException);
+            throw new RuntimeException("Error while getting values from object fields.", reflectiveOperationException);
+        }
+    }
+
+    static String getPrimaryKeyName(String schemaName, String tableName) {
+
+        final String GET_PRIMARY_KEY = "SELECT C.COLUMN_NAME FROM information_schema.table_constraints AS pk INNER JOIN\n" +
+                "information_schema.KEY_COLUMN_USAGE AS C ON C.TABLE_NAME = pk.TABLE_NAME AND C.CONSTRAINT_NAME = pk.CONSTRAINT_NAME\n" +
+                "AND C.TABLE_SCHEMA = pk.TABLE_SCHEMA WHERE  pk.TABLE_NAME  = '" + tableName + "' " +
+                "AND pk.TABLE_SCHEMA = '" + schemaName + "' AND pk.CONSTRAINT_TYPE = 'PRIMARY KEY';";
+
+        DefaultDataSource dataSource = new DefaultDataSource();
+        try (Connection connection = dataSource.getConnection();
+             Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(GET_PRIMARY_KEY)) {
+            resultSet.next();
+            return resultSet.getString(1);
+        } catch (SQLException sqlException) {
+            throw new RuntimeException("Can`t get name of primary key from DB", sqlException);
         }
     }
 }

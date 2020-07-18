@@ -1,14 +1,20 @@
-package com.glushkov.QueryGenerator;
+package com.glushkov.query_generator;
 
 
-@Table(name = "persons")
-public class Person {
+@Table(schema = "testschema", name = "person")
+public class TestEntity {
     @Column
     private int id;
     @Column(name = "person_name")
     private String name;
     @Column
     private double salary;
+
+    public TestEntity(int id, String name, double salary) {
+        this.id = id;
+        this.name = name;
+        this.salary = salary;
+    }
 
     public int getId() {
         return id;
