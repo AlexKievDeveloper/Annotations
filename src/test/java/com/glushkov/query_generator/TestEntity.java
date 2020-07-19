@@ -1,8 +1,9 @@
 package com.glushkov.query_generator;
 
 
-@Table(schema = "testschema", name = "person")
+@Table(name = "person")
 public class TestEntity {
+    @PrimaryKey
     @Column
     private int id;
     @Column(name = "person_name")

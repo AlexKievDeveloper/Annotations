@@ -11,7 +11,7 @@ public class QueryGeneratorITest {
     public void getAllTest() {
         //prepare
         QueryGenerator queryGenerator = new QueryGenerator();
-        String expectedQuery = "SELECT id, person_name, salary FROM testschema.person;";
+        String expectedQuery = "SELECT id, person_name, salary FROM person;";
         //when
         String actualQuery = queryGenerator.getAll(TestEntity.class);
         //then
@@ -23,7 +23,7 @@ public class QueryGeneratorITest {
         //prepare
         QueryGenerator queryGenerator = new QueryGenerator();
         TestEntity testEntity = new TestEntity(10, "Alex", 3000.1);
-        String expectedQuery = "INSERT INTO testschema.person (id, person_name, salary) VALUES (10, 'Alex', 3000.1);";
+        String expectedQuery = "INSERT INTO person (id, person_name, salary) VALUES (10, 'Alex', 3000.1);";
         //when
         String actualQuery = queryGenerator.insert(testEntity);
         //then
@@ -35,7 +35,7 @@ public class QueryGeneratorITest {
         //prepare
         QueryGenerator queryGenerator = new QueryGenerator();
         TestEntity testEntity = new TestEntity(10, "Alex", 3000.1);
-        String expectedQuery = "UPDATE testschema.person SET id = 10, person_name = 'Alex', salary = 3000.1;";
+        String expectedQuery = "UPDATE person SET id = 10, person_name = 'Alex', salary = 3000.1;";
         //when
         String actualQuery = queryGenerator.update(testEntity);
         //then
@@ -46,7 +46,7 @@ public class QueryGeneratorITest {
     public void getByIDTest() {
         //prepare
         QueryGenerator queryGenerator = new QueryGenerator();
-        String expectedQuery = "SELECT id, person_name, salary FROM testschema.person WHERE id = 1;";
+        String expectedQuery = "SELECT id, person_name, salary FROM person WHERE id = 1;";
         //when
         String actualQuery = queryGenerator.getByID(TestEntity.class, 1);
         //then
@@ -57,7 +57,7 @@ public class QueryGeneratorITest {
     public void deleteTest() {
         //prepare
         QueryGenerator queryGenerator = new QueryGenerator();
-        String expectedQuery = "DELETE FROM testschema.person WHERE id = 1;";
+        String expectedQuery = "DELETE FROM person WHERE id = 1;";
         //when
         String actualQuery = queryGenerator.delete(TestEntity.class, 1);
         //then
@@ -73,13 +73,5 @@ public class QueryGeneratorITest {
         String actualQuery = QueryGenerator.getColumnsValues(testEntity);
         //then
         assertEquals(expectedQuery, actualQuery);
-    }
-
-    @Test
-    public void getPrimaryKeyNameITest() {
-        //when
-        String actual = QueryGenerator.getPrimaryKeyName("testschema", "person");
-        //then
-        assertEquals("id", actual);
     }
 }
