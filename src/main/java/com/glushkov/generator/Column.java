@@ -1,4 +1,4 @@
-package com.glushkov.query_generator;
+package com.glushkov.generator;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

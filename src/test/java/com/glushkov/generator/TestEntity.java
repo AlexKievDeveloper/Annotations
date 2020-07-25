@@ -1,9 +1,9 @@
-package com.glushkov.query_generator;
+package com.glushkov.generator;
 
 
 @Table(name = "person")
 public class TestEntity {
-    @PrimaryKey
+    @Id
     @Column
     private int id;
     @Column(name = "person_name")

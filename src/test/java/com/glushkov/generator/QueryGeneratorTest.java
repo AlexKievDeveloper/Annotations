@@ -1,11 +1,15 @@
-package com.glushkov.query_generator;
+package com.glushkov.generator;
 
 
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class QueryGeneratorITest {
+
+public class QueryGeneratorTest {
 
     @Test
     public void getAllTest() {
@@ -23,7 +27,7 @@ public class QueryGeneratorITest {
         //prepare
         QueryGenerator queryGenerator = new QueryGenerator();
         TestEntity testEntity = new TestEntity(10, "Alex", 3000.1);
-        String expectedQuery = "INSERT INTO person (id, person_name, salary) VALUES (10, 'Alex', 3000.1);";
+        String expectedQuery = "INSERT INTO person (person_name, id, salary) VALUES ('Alex', 10, 3000.1);";
         //when
         String actualQuery = queryGenerator.insert(testEntity);
         //then
@@ -35,7 +39,7 @@ public class QueryGeneratorITest {
         //prepare
         QueryGenerator queryGenerator = new QueryGenerator();
         TestEntity testEntity = new TestEntity(10, "Alex", 3000.1);
-        String expectedQuery = "UPDATE person SET id = 10, person_name = 'Alex', salary = 3000.1;";
+        String expectedQuery = "UPDATE person SET person_name = 'Alex', id = 10, salary = 3000.1;";
         //when
         String actualQuery = queryGenerator.update(testEntity);
         //then
@@ -46,7 +50,7 @@ public class QueryGeneratorITest {
     public void getByIDTest() {
         //prepare
         QueryGenerator queryGenerator = new QueryGenerator();
-        String expectedQuery = "SELECT id, person_name, salary FROM person WHERE id = 1;";
+        String expectedQuery = "SELECT id, person_name, salary FROM person WHERE id = '1';";
         //when
         String actualQuery = queryGenerator.getByID(TestEntity.class, 1);
         //then
@@ -57,7 +61,7 @@ public class QueryGeneratorITest {
     public void deleteTest() {
         //prepare
         QueryGenerator queryGenerator = new QueryGenerator();
-        String expectedQuery = "DELETE FROM person WHERE id = 1;";
+        String expectedQuery = "DELETE FROM person WHERE id = '1';";
         //when
         String actualQuery = queryGenerator.delete(TestEntity.class, 1);
         //then
@@ -65,13 +69,26 @@ public class QueryGeneratorITest {
     }
 
     @Test
-    public void getColumnsValuesTest() {
+    public void getFieldsValuesTest() {
         //prepare
         TestEntity testEntity = new TestEntity(10, "Alex", 3000.1);
-        String expectedQuery = "10, 'Alex', 3000.1";
+        Map<String, Object> expectedMap = new HashMap<>();
+        expectedMap.put("person_name", "'Alex'");
+        expectedMap.put("id", 10);
+        expectedMap.put("salary", 3000.1);
         //when
-        String actualQuery = QueryGenerator.getColumnsValues(testEntity);
+        Map<String, Object> actualMap = QueryGenerator.getFieldsValues(testEntity);
         //then
-        assertEquals(expectedQuery, actualQuery);
+        assertEquals(expectedMap.toString(), actualMap.toString());
+    }
+
+    @Test
+    public void getTableNameTest() {
+        //prepare
+        String expected = "person";
+        //when
+        String actual = QueryGenerator.getTableName(TestEntity.class);
+        //then
+        assertEquals(expected, actual);
     }
 }

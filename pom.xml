@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.glushkov</groupId>
-    <artifactId>query_generator</artifactId>
+    <artifactId>query-generator</artifactId>
     <version>1.0.0</version>
 
     <properties>
@@ -13,7 +13,6 @@
     </properties>
 
     <build>
-        <defaultGoal>package</defaultGoal>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
